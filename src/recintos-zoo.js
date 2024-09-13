@@ -3,20 +3,25 @@ class Animal {
   tamanho;
   biomas;
   carnivoro;
-  recintos;
 
-  constructor(nome, tamanho, biomas, carnivoro, recintos) {
+  constructor(nome, tamanho, biomas, carnivoro) {
     this.nome = nome;
     this.tamanho = tamanho;
     this.biomas = biomas;
     this.carnivoro = carnivoro;
-    this.recintos = recintos;
   }
 
   calculaEspacoRestante(quantidade, recintoDaVez) {
     let somatorio = 0;
     for (const animal of recintoDaVez.animais) {
       somatorio = somatorio + animal.tamanho;
+    }
+
+    for (const animal of recintoDaVez.animais) {
+      if(animal.nome != this.nome){
+        somatorio = somatorio + 1;
+        break;
+      }
     }
 
     return recintoDaVez.tamanho - (quantidade * this.tamanho + somatorio);
@@ -36,30 +41,12 @@ class Animal {
   // Quando há mais de uma espécie no mesmo recinto, é preciso considerar 1 espaço extra ocupado
   verificaEspaco(quantidade, recintoConfortavel) {
     //verifica se é da mesma especie
-    console.log("verifica espaço");
-    for (const animal of recintoConfortavel.animais) {
-      if (animal.nome != this.nome) {
-        console.log(
-          "tamanho restante" +
-            this.calculaEspacoRestante(quantidade, recintoConfortavel)
-        );
-        if (
-          this.calculaEspacoRestante(quantidade, recintoConfortavel) <
-          recintoConfortavel.tamanho + 1
-        ) {
-          return true;
-        }
-        return false;
-      }
-      if (
-        this.calculaEspacoRestante(quantidade, recintoConfortavel) <
-        recintoConfortavel.tamanho
-      ) {
-        return true;
-      }
-      return false;
+
+    if(this.calculaEspacoRestante(quantidade, recintoConfortavel) >= 0){
+      return true;
     }
-    return true;
+    return false;
+
   }
 
   //Animais carnívoros devem habitar somente com a própria espécie
@@ -69,7 +56,6 @@ class Animal {
       // se for falso entra no if
       //verifica se o animal que está lá dentro não é carnivoro
       for (const animal of recintoDaVez.animais) {
-        console.log(animal.nome);
         if (!animal.carnivoro) {
           return true;
         }
@@ -79,7 +65,7 @@ class Animal {
     }
 
     //verificando se são da mesma especies
-    if (recintoDaVez.animais.includes(animalDaVez)) {
+    if (recintoDaVez.animais.includes(animalDaVez) || recintoDaVez.animais.length == 0) {
       return true;
     }
     return false;
@@ -94,16 +80,12 @@ class Hipopotamo extends Animal {
   //Hipopótamo(s) só tolera(m) outras espécies estando num recinto com savana e rio
   verificaTolerancia(recintoDaVez) {
     //savana e rio
-    if (
-      recintoDaVez.biomas.includes(Biomas.RIO) &&
-      recintoDaVez.biomas.includes(Biomas.SAVANA)
+    if ( recintoDaVez.biomas.includes(Biomas.RIO) && recintoDaVez.biomas.includes(Biomas.SAVANA)
     ) {
       return true;
     }
 
-    if (
-      recintoDaVez.animais.includes(Animais.HIPOPOTAMO) ||
-      recintoDaVez.animais.length == 0
+    if ( recintoDaVez.animais.includes(Animais.HIPOPOTAMO) || recintoDaVez.animais.length == 0
     ) {
       return true;
     }
@@ -145,12 +127,17 @@ const Biomas = {
 };
 
 const Animais = {
-  LEAO: new Animal("LEAO", 3, [Biomas.SAVANA]),
-  LEOPARDO: new Animal("LEOPARDO", 2, [Biomas.SAVANA]),
-  CROCODILO: new Animal("CROCODILO", 3, [Biomas.RIO]),
-  MACACO: new Macaco("MACACO", 1, [Biomas.FLORESTA, Biomas.SAVANA]),
-  GAZELA: new Animal("GAZELA", 2, [Biomas.SAVANA]),
-  HIPOPOTAMO: new Hipopotamo("HIPOPOTAMO", 4, [Biomas.SAVANA, Biomas.RIO]),
+  LEAO: new Animal("LEAO", 3, [Biomas.SAVANA], true),
+  LEOPARDO: new Animal("LEOPARDO", 2, [Biomas.SAVANA], true),
+  CROCODILO: new Animal("CROCODILO", 3, [Biomas.RIO], true),
+  MACACO: new Macaco("MACACO", 1, [Biomas.FLORESTA, Biomas.SAVANA], false),
+  GAZELA: new Animal("GAZELA", 2, [Biomas.SAVANA], false),
+  HIPOPOTAMO: new Hipopotamo(
+    "HIPOPOTAMO",
+    4,
+    [Biomas.SAVANA, Biomas.RIO],
+    false
+  ),
 };
 
 const Recintos = {
@@ -189,16 +176,13 @@ class RecintosZoo {
         if (!animalDaVez.verificaBioma(recintoDaVez)) {
           continue;
         }
-        console.log("oiBioma");
         //lugares de cabem o abimal
         if (!animalDaVez.verificaEspaco(quantidade, recintoDaVez)) {
           continue;
         }
-        console.log("oiEspaço");
         if (!animalDaVez.verificaConforto(animalDaVez, recintoDaVez)) {
           continue;
         }
-        console.log("oiConforto");
         if (animalDaVez.nome == "HIPOPOTAMO") {
           if (!animalDaVez.verificaTolerancia(recintoDaVez)) {
             continue;
@@ -210,24 +194,23 @@ class RecintosZoo {
             continue;
           }
         }
-        console.log("oiMacaco");
         recintosViaveis.push(recintoDaVez);
       }
 
-      console.log(recintosViaveis);
 
       if (recintosViaveis.length == 0) {
         throw new Error("Não há recinto viável");
       } else {
-        for (const aux in recintosViaveis) {
+        for (const aux of recintosViaveis) {
           resultado.push(
-            `Recinto ${aux.id} (espaço livre: ${calculaEspacoRestante(
+            `Recinto ${
+              aux.id
+            } (espaço livre: ${animalDaVez.calculaEspacoRestante(
               quantidade,
               aux
             )} total: ${aux.tamanho})`
           );
         }
-
         return { recintosViaveis: resultado };
       }
     } catch (erro) {
@@ -240,5 +223,4 @@ recintosViaveis: ["Recinto 1 (espaço livre: 5 total: 10)",
 "Recinto 2 (espaço livre: 3 total: 5)",   
 "Recinto 3 (espaço livre: 2 total: 7)"]
 */
-console.log(new RecintosZoo().analisaRecintos("MACACO", 2));
 export { RecintosZoo as RecintosZoo };
